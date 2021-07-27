@@ -1,7 +1,7 @@
 const passport = require('passport');
 const LocalStrategy = require('passport-local').Strategy;
 const pool = require('../database');
-const helper = require('../lib/helper');
+const helpers = require('./helper');
 
 passport.use('local.login', new LocalStrategy({
     usernameField: 'correo',
@@ -9,12 +9,14 @@ passport.use('local.login', new LocalStrategy({
     passReqToCallback: true
 }, async(req, correo, password, done) =>{
     console.log(req.body);
-    const rows = await pool.query('SELECT * FROM usuario WHERE correo = ?' [correo]);
+    /*console.log(correo);
+    console.log(password);*/
+    const rows = await pool.query('SELECT * FROM Usuario WHERE correo = ?', [correo]);
     if(rows.length > 0){
         const user = rows[0];
-        const validPassword = await helper.matchPassword(password, user.password);
+        const validPassword = await helpers.matchPassword(password, user.password);
         if(validPassword){
-            done(null, user, req.flash('success', 'BIENVENIDO' + user.NomUsuario));
+            done(null, user, req.flash('success', 'BIENVENIDO ' + user.NomUsuario));
         }else{
             done(null, false, req.flash('message', 'Contraseña incorrecta'));
         }
@@ -34,11 +36,11 @@ passport.use('local.registro', new LocalStrategy({
         password,
         NomUsuario
     };
-    newUser.password = await helper.encryptPassword(password);
-    const result = await pool.query('INSERT INTO usuario SET ?', [newUser]);
+    newUser.password = await helpers.encryptPassword(password);
+    const result = await pool.query('INSERT INTO Usuario SET ?', [newUser]);
     newUser.id = result.insertId;
     return done(null, newUser);
-    //console.log(result);
+   //console.log(result);
 }));
 
 passport.serializeUser((user, done) =>{
@@ -46,6 +48,6 @@ passport.serializeUser((user, done) =>{
 });
 
 passport.deserializeUser(async(id, done) => {
-    const rows = await pool.query('SELECT * FROM usuario Where IdUsuario = ?' [id]);
+    const rows = await pool.query('SELECT * FROM Usuario Where IdUsuario = ?', [id]);
     done(null, rows[0]);
-})
+});
